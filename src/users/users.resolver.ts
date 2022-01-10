@@ -6,6 +6,7 @@ import {
   CreateAccountOutput,
 } from './dtos/create-account.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
+import { DuplicationException } from '../common/exceptions/duplicationException';
 
 @Resolver(of => User)
 export class UsersResolver {
@@ -27,15 +28,25 @@ export class UsersResolver {
         ok: true,
       };
     } catch (error) {
+      let message: string = `Couldn't create account`;
+      if (error instanceof DuplicationException) message = error.message;
+
       return {
         ok: false,
-        error: error.message,
+        error: message,
       };
     }
   }
 
   @Mutation(returns => LoginOutput)
   async login(@Args('input') loginInput: LoginInput): Promise<LoginOutput> {
-    return null;
+    try {
+      return await this.usersService.login(loginInput);
+    } catch (error) {
+      return {
+        ok: false,
+        error: error.message,
+      };
+    }
   }
 }

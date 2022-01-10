@@ -1,1 +1,1 @@
-export declare class CommonException extends Error {}
+export class CommonException extends Error {}
