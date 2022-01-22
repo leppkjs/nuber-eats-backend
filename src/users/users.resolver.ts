@@ -1,12 +1,12 @@
-import { User } from './entities/user.entity';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { UsersService } from './users.service';
-import {
-  CreateAccountInput,
-  CreateAccountOutput,
-} from './dtos/create-account.dto';
-import { LoginInput, LoginOutput } from './dtos/login.dto';
-import { DuplicationException } from '../common/exceptions/duplicationException';
+import {User} from './entities/user.entity';
+import {Args, Mutation, Query, Resolver} from '@nestjs/graphql';
+import {UsersService} from './users.service';
+import {CreateAccountInput, CreateAccountOutput,} from './dtos/create-account.dto';
+import {LoginInput, LoginOutput} from './dtos/login.dto';
+import {DuplicationException} from '../common/exceptions/duplicationException';
+import {UseGuards} from '@nestjs/common';
+import {AuthGuard} from '../auth/auth.guard';
+import {AuthUser} from '../auth/auth-user.decorator';
 
 @Resolver(of => User)
 export class UsersResolver {
@@ -48,5 +48,11 @@ export class UsersResolver {
         error: error.message,
       };
     }
+  }
+
+  @Query(returns => User)
+  @UseGuards(AuthGuard)
+  me(@AuthUser() authUser) {
+      return authUser;
   }
 }
