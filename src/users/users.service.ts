@@ -1,5 +1,5 @@
 import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
+import {Repository, UpdateResult} from 'typeorm';
 import {User} from './entities/user.entity';
 import {Injectable} from '@nestjs/common';
 import {CreateAccountInput} from './dtos/create-account.dto';
@@ -9,6 +9,7 @@ import {NotfoundException} from '../common/exceptions/notfoundException';
 import {IncorrectPassword} from '../common/exceptions/incorrectPassword';
 import {ConfigService} from '@nestjs/config';
 import {JwtService} from '../jwt/jwt.service';
+import {EditProfileInput} from './dtos/edit-profile.dto';
 
 
 @Injectable()
@@ -56,5 +57,19 @@ export class UsersService {
 
   async findById(id: number): Promise<User> {
     return this.users.findOne({id})
+  }
+
+  async editProfile(userId: number, {email, password}: EditProfileInput): Promise<UpdateResult> {
+      const user = await this.findById(userId);
+
+      if(email) {
+         user.email = email;
+      }
+
+      if(password) {
+          user.password = password;
+      }
+
+      return this.users.update(userId, user);
   }
 }
