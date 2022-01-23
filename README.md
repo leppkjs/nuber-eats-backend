@@ -34,3 +34,7 @@ CREATE DATABASE nuber-eats OWNER leppk;
 - See Profile
 - Edit Profile
 - Verify Email
+
+## Etc
+https://receive-smss.com/sms/
+https://app.mailgun.com/app/dashboard

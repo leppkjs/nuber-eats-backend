@@ -3,13 +3,12 @@ import {Args, Mutation, Query, Resolver} from '@nestjs/graphql';
 import {UsersService} from './users.service';
 import {CreateAccountInput, CreateAccountOutput,} from './dtos/create-account.dto';
 import {LoginInput, LoginOutput} from './dtos/login.dto';
-import {DuplicationException} from '../common/exceptions/duplicationException';
 import {UseGuards} from '@nestjs/common';
 import {AuthGuard} from '../auth/auth.guard';
 import {AuthUser} from '../auth/auth-user.decorator';
 import {UserProfileInput, UserProfileOutput} from './dtos/user-profile.dto';
-import {NotfoundException} from '../common/exceptions/notfoundException';
 import {EditProfileInput, EditProfileOutput} from './dtos/edit-profile.dto';
+import {VerifyEmailInput, VerifyEmailOutput} from './dtos/verify-email.dto';
 
 @Resolver(of => User)
 export class UsersResolver {
@@ -19,33 +18,12 @@ export class UsersResolver {
   async createAccount(
     @Args('input') createAccountInput: CreateAccountInput,
   ): Promise<CreateAccountOutput> {
-    try {
-      await this.usersService.createAccount(createAccountInput);
-
-      return {
-        ok: true,
-      };
-    } catch (error) {
-      let message: string = `Couldn't create account`;
-      if (error instanceof DuplicationException) message = error.message;
-
-      return {
-        ok: false,
-        error: message,
-      };
-    }
+    return this.usersService.createAccount(createAccountInput);
   }
 
   @Mutation(returns => LoginOutput)
   async login(@Args('input') loginInput: LoginInput): Promise<LoginOutput> {
-    try {
-      return await this.usersService.login(loginInput);
-    } catch (error) {
-      return {
-        ok: false,
-        error: error.message,
-      };
-    }
+    return await this.usersService.login(loginInput);
   }
 
   @Query(returns => User)
@@ -57,45 +35,21 @@ export class UsersResolver {
   @UseGuards(AuthGuard)
   @Query(returns => UserProfileOutput)
   async userProfile(@Args() userProfileInput: UserProfileInput): Promise<UserProfileOutput> {
-    try {
-      const user = await this.usersService.findById(userProfileInput.userId);
-
-      if(!user)
-        throw new NotfoundException();
-
-      return {
-        ok: true,
-        user
-      }
-
-    }catch (e) {
-      return {
-        ok: false,
-        error: 'User Not Found',
-      }
-    }
+      return await this.usersService.findById(userProfileInput.userId);
   }
 
-  @UseGuards(AuthGuard)
   @Mutation(returns => EditProfileOutput)
+  @UseGuards(AuthGuard)
   async editProfile(
       @AuthUser() authUser: User,
       @Args('input') editProfileInput: EditProfileInput
   ): Promise<EditProfileOutput> {
-    try{
-      await this.usersService.editProfile(authUser.id, editProfileInput);
+    return await this.usersService.editProfile(authUser.id, editProfileInput);
+  }
 
-      return {
-        ok: true
-      }
-
-    }catch (error) {
-      return {
-        ok: false,
-        error
-      }
-    };
-
+  @Mutation(returns => VerifyEmailOutput)
+  async verifyEmail(@Args('input') {code}: VerifyEmailInput) {
+      return await this.usersService.verifyEmail(code);
   }
 
 }
