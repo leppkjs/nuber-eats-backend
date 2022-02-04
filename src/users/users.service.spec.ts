@@ -272,6 +272,7 @@ describe('UserService', () => {
         it('should verify email', async () => {
             const mockedVerification = {
                 user: {
+                    id: 1,
                     verified: false,
                 },
                 id: 1,
@@ -287,7 +288,7 @@ describe('UserService', () => {
             );
             expect(usersRepository.update).toHaveBeenCalledTimes(1);
             expect(usersRepository.update).toHaveBeenCalledWith(
-                mockedVerification.id, { verified: true }
+                mockedVerification.user.id, Object.assign(mockedVerification.user, { verified: true })
             );
 
             expect(verificationsRepository.delete).toHaveBeenCalledTimes(1);

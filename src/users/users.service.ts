@@ -120,7 +120,7 @@ export class UsersService {
 
             if (verification) {
                 verification.user.verified = true;
-                await this.users.update(verification.id, verification.user);
+                await this.users.update(verification.user.id, verification.user);
                 await this.verifications.delete(verification.id);
                 return {ok: true};
             }
