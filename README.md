@@ -273,4 +273,213 @@ let human: humanRecordType = {
 
 ---
 
+#10 RESTAURANT CRUD
+## What is Relations (https://typeorm.io/relations)
+관계를 이용한 엔티티의 연관관계 맵핑
+### 관계 설정
+- 일대일 @OneToOne
+- 다대일 @ManyToOne
+- 일대다 @OneToMany
+- 다대다 @ManyToMany
 
+일대일 관계에서는 반대도 일대일 관계가 됨.
+다대일 관계에서는 다(N)쪽이 항상 외래 키를 가지고 있지만, 일대일 관계에서는 주 테이블이나 대상 테이블에 외래 키를 둘 수 있어서 개발 시 어느 쪽에 둘지를 선택해야 함.
+(팀 -* 직원)
+
+### 관계 옵션
+- eager: 메서드를 사용할 때 또는 QueryBuilder이 엔터티 에서 관계가 항상 기본 엔터티와 함께 로드
+- cascade: boolean | ("insert" | "update")[]- true로 설정하면 관련 개체가 데이터베이스에 삽입 및 업데이트
+- onDelete: "RESTRICT"|"CASCADE"|"SET NULL"- 참조된 객체가 삭제될 때 외래 키가 어떻게 동작해야 하는지 지정
+- nullable: boolean- 이 관계의 열이 nullable인지 여부를 나타냅니다. 기본적으로 nullable입니다.
+- orphanedRowAction: "nullify" | "delete" | "soft-delete"- 자식 행이 부모에서 제거되면 자식 행이 분리되어야 하는지(기본값) 아니면 삭제되어야 하는지(삭제 또는 일시 삭제) 결정합니다.
+
+![img.png](img.png)
+
+
+#### 그래서...
+- Restaurant -> User { onDelete: 'CASCADE' }
+- Restaurant -> Category { nullable: true, onDelete: 'SET NULL' },
+: category를 지울 때 restaurant를 지우면 안되기 때문에 restaurant.entity.ts → category에 nullable: true 설정
+
+> #### 영속성 전이(CASCADE)   
+> : 영속성 전이 (CASCADE) 란 특정 엔티티를 영속성 상태로 만들때 연관되어진 엔티티도 함께 영속성 상태로 변경 하는 것  
+> #### 고아객체(ORPHAN)  
+> : 부모 엔티티와 연관관계가 끊어진 자식 엔티티를 자동으로 삭제 하는 기능을 고아 객체
+
+
+## 스키마 생성
+### schema uniquely named types  
+- 원인 : object type, category type, input type  
+- ObjectType,  InputType 같은 이름으로 사용  
+데이터 베이스에서 인식하는 User가 아니라 graphql 과 데이터베이스 모두가 인식할수 있는 User가 됐음
+
+#### Object Types (for Resolver)
+GraphQL Schema에서 대부분의 definition들은 Object Type이다.   
+각각의 Object Type은 애플리케이션 클라이언트가 상호 작용할 수 있는 Domain Object를 나타내야 한다.   
+만약 Author와 Post List를 가져오는 API가 있다고 가정해보자.   
+우리는 이 기능을 지원하기 위해 Author Type과 Post Type을 정의해야 한다.   
+
+#### InputType과 ArgsType
+InputType과 ArgsType 모두 Query혹은 Mutation에서 Argument들을 받고자할 때 사용할 수 있다. 
+두 개의 차이점은 코드를 작성할 때와 GraphQL 요청을 보낼 때 나타난다.
+
+#### 코드를 작성할 때 차이점
+둘다 @Args() 데코레이터를 사용한다.   
+그런데 @Args()의 인자로 이름을 넣어주냐 안넣어주냐에서 차이가 있다.   
+InputType을 사용할 경우, @Args()의 인자로 args의 이름(string)을 넣어주어야한다.   
+ArgsType을 사용할 경우, @Args()의 인자로 args의 이름을 넣지 않아도 된다.  
+
+
+#### InputType을 사용할 때
+```typescript
+import { Field, InputType } from '@nestjs/graphql';
+
+@InputType()
+export class AuthorArgs {
+  @Field()
+  firstName: string;
+
+  @Field()
+  lastName: string;
+}
+import { Resolver, Query } from '@nestjs/graphql';
+import { AuthorArgs } from "./dtos/author.dto";
+
+@Resolver()
+export class Resolver {
+  @Query(returns => Boolean)
+  createAuthor(@Args('example') args: AuthorArgs) {
+    return true;
+  }
+}
+```
+
+#### ArgsType을 사용할 때
+```typescript
+import { Field, ArgsType } from '@nestjs/graphql';
+
+@ArgsType()
+export class AuthorArgs {
+  @Field()
+  firstName: string;
+
+  @Field()
+  lastName: string;
+}
+import { Resolver, Query } from '@nestjs/graphql';
+import { AuthorArgs } from "./dtos/author.dto";
+
+@Resolver()
+export class Resolver {
+  @Query(returns => Boolean)
+  createAuthor(@Args() args: AuthorArgs) {
+    return true;
+  }
+}
+```
+
+#### GraphQL 요청을 보낼 때 차이점
+InputType은 @Args()에 넘겨준 args의 이름으로 하나의 객체를 보내고, ArgsType은 각각의 Field를 따로따로 보낸다.
+#### InputType을 사용할 때
+```typescript
+{
+  createAuthor(example: { firstName: "Brendan", lastName: "Eich" })
+}
+```
+#### ArgsType을 사용할 때
+```typescript
+{
+  createAuthor(firstName: "Brendan", lastName: "Eich")
+}
+```
+
+
+#### slug
+
+> 슬러그는 페이지나 포스트를 설명하는 몇개 단어의 집합입니다. 
+> 슬러그는 페이지나 포스트의 제목을 URL 친화적으로 만든 것이죠. 
+> 워드프레스에서는 이 슬러그가 자동으로 생성됩니다. 
+> 하지만 여러분이 원하시는 어떤 것으로도 사용이 가능합니다. 
+> 슬러그는 컨텐츠의 고유주소로 사용이 되어, 컨텐츠의 주소가 어떤 내용인지를 쉽게 이해할 수 있도록 합니다.
+
+#### 관리자 생성
+```typescript
+mutation {
+ createAccount(input: {
+  email: "admin@test.com",
+          password: "12345",
+          role: Owner
+ }) {
+  ok
+  error
+ }
+}
+```
+
+#### 생성된 관리자로 로그인
+```typescript
+mutation {
+    login(input: {
+        email: "admin@test.com",
+            password: "12345"
+    }) {
+        ok
+        error
+        token
+    }
+}
+
+// 응답
+{
+ "data": {
+ "login": {
+  "ok": true,
+          "error": null,
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaWF0IjoxNjU1MDI2NDA4fQ._Ljit2ua4j9g8QsJ5uTnK2kNL2L9NONPDrz8td1YBFg"
+ }
+}
+}
+```
+
+#### 레스토랑 생성
+```typescript
+// header 설정
+{
+"x-jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaWF0IjoxNjU1MDI2NDA4fQ._Ljit2ua4j9g8QsJ5uTnK2kNL2L9NONPDrz8td1YBFg"
+}
+
+
+mutation {
+ createRestaurant(input: {
+  name: "BBQ House",
+          address: "123 Altavista",
+          coverImg: "https://test.com/img.png",
+          categoryName: "Korean BBq"
+ }) {
+  ok
+  error
+ }
+}
+```
+
+
+## Role 
+Role 데코레이션을 만들어서 SetMetadata를 이용해서 해당 메소드의 허용하는 권한을 설정 하는 방법
+
+두번째 auth.module를 만들어서 전역으로 설정 하는 방법 (APP_GUARD)
+
+```typescript
+const roles = this.reflector.get<AllowedRoles>(
+            'roles',
+            context.getHandler(),
+        );
+        if (!roles) {
+            return true;
+        }
+```
+
+@RelationId
+
+defensive programming
+
+CustomRepository (3가지 방법)

@@ -1,55 +1,62 @@
-import {User} from './entities/user.entity';
-import {Args, Mutation, Query, Resolver} from '@nestjs/graphql';
-import {UsersService} from './users.service';
-import {CreateAccountInput, CreateAccountOutput,} from './dtos/create-account.dto';
-import {LoginInput, LoginOutput} from './dtos/login.dto';
-import {UseGuards} from '@nestjs/common';
-import {AuthGuard} from '../auth/auth.guard';
-import {AuthUser} from '../auth/auth-user.decorator';
-import {UserProfileInput, UserProfileOutput} from './dtos/user-profile.dto';
-import {EditProfileInput, EditProfileOutput} from './dtos/edit-profile.dto';
-import {VerifyEmailInput, VerifyEmailOutput} from './dtos/verify-email.dto';
+import { UseGuards } from '@nestjs/common';
+import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
+import { AuthUser } from 'src/auth/auth-user.decorator';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { Role } from 'src/auth/role.decorator';
+import {
+  CreateAccountInput,
+  CreateAccountOutput,
+} from './dtos/create-account.dto';
+import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
+import { LoginInput, LoginOutput } from './dtos/login.dto';
+import { UserProfileInput, UserProfileOutput } from './dtos/user-profile.dto';
+import { VerifyEmailInput, VerifyEmailOutput } from './dtos/verify-email.dto';
+import { User } from './entities/user.entity';
+import { UserService } from './users.service';
 
 @Resolver(of => User)
-export class UsersResolver {
-  constructor(private readonly usersService: UsersService) {}
+export class UserResolver {
+  constructor(private readonly usersService: UserService) {}
 
   @Mutation(returns => CreateAccountOutput)
   async createAccount(
-    @Args('input') createAccountInput: CreateAccountInput,
+      @Args('input') createAccountInput: CreateAccountInput,
   ): Promise<CreateAccountOutput> {
     return this.usersService.createAccount(createAccountInput);
   }
 
   @Mutation(returns => LoginOutput)
   async login(@Args('input') loginInput: LoginInput): Promise<LoginOutput> {
-    return await this.usersService.login(loginInput);
+    return this.usersService.login(loginInput);
   }
 
   @Query(returns => User)
-  @UseGuards(AuthGuard)
+  @Role(['Any'])
   me(@AuthUser() authUser: User) {
-      return authUser;
+    return authUser;
   }
 
-  @UseGuards(AuthGuard)
   @Query(returns => UserProfileOutput)
-  async userProfile(@Args() userProfileInput: UserProfileInput): Promise<UserProfileOutput> {
-      return await this.usersService.findById(userProfileInput.userId);
+  @Role(['Any'])
+  async userProfile(
+      @Args() userProfileInput: UserProfileInput,
+  ): Promise<UserProfileOutput> {
+    return this.usersService.findById(userProfileInput.userId);
   }
 
   @Mutation(returns => EditProfileOutput)
-  @UseGuards(AuthGuard)
+  @Role(['Any'])
   async editProfile(
       @AuthUser() authUser: User,
-      @Args('input') editProfileInput: EditProfileInput
+      @Args('input') editProfileInput: EditProfileInput,
   ): Promise<EditProfileOutput> {
-    return await this.usersService.editProfile(authUser.id, editProfileInput);
+    return this.usersService.editProfile(authUser.id, editProfileInput);
   }
 
   @Mutation(returns => VerifyEmailOutput)
-  async verifyEmail(@Args('input') {code}: VerifyEmailInput) {
-      return await this.usersService.verifyEmail(code);
+  verifyEmail(
+      @Args('input') { code }: VerifyEmailInput,
+  ): Promise<VerifyEmailOutput> {
+    return this.usersService.verifyEmail(code);
   }
-
 }
